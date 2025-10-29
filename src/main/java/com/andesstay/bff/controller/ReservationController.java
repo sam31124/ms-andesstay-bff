@@ -65,13 +65,13 @@ public class ReservationController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('Admin', 'Recepcionista')")
-    public ResponseEntity<?> createReservation(@RequestBody Map<String, String> body) {
+    public ResponseEntity<?> createReservation(@RequestBody Map<String, Object> body) {
         // Intenta reenviar al microservicio independiente
         try {
             String targetUrl = reservationsServiceUrl + "/api/reservations";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.postForEntity(targetUrl, request, Map.class);
             if (response.getStatusCode().is2xxSuccessful()) {
                 return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
@@ -80,9 +80,9 @@ public class ReservationController {
             // Fallback local
         }
 
-        String huesped = body.getOrDefault("huesped", body.get("guestName"));
-        String unidad = body.getOrDefault("unidad", body.get("room"));
-        String estado = body.getOrDefault("estado", body.get("status"));
+        String huesped = body.containsKey("huesped") ? String.valueOf(body.get("huesped")) : (body.containsKey("guestName") ? String.valueOf(body.get("guestName")) : null);
+        String unidad = body.containsKey("unidad") ? String.valueOf(body.get("unidad")) : (body.containsKey("room") ? String.valueOf(body.get("room")) : null);
+        String estado = body.containsKey("estado") ? String.valueOf(body.get("estado")) : (body.containsKey("status") ? String.valueOf(body.get("status")) : null);
 
         if (huesped == null || huesped.isBlank() || unidad == null || unidad.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -106,9 +106,9 @@ public class ReservationController {
     @PreAuthorize("hasAnyRole('Admin', 'Recepcionista')")
     public ResponseEntity<?> updateStatus(
             @PathVariable Long id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, Object> body) {
 
-        String newStatus = body.get("status");
+        String newStatus = body.containsKey("status") ? String.valueOf(body.get("status")) : null;
         if (newStatus == null || newStatus.isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("error", "El campo 'status' es obligatorio."));
         }
@@ -118,7 +118,7 @@ public class ReservationController {
             String targetUrl = reservationsServiceUrl + "/api/reservations/" + id + "/status";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             ResponseEntity<Map> response = restTemplate.exchange(targetUrl, HttpMethod.PUT, request, Map.class);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
@@ -139,5 +139,19 @@ public class ReservationController {
                 "data", reserva
             ));
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/simulate-dlq")
+    @PreAuthorize("hasAnyRole('Admin', 'Recepcionista')")
+    public ResponseEntity<?> simulateDlq(@RequestParam(defaultValue = "email") String queue) {
+        try {
+            String targetUrl = reservationsServiceUrl + "/api/reservations/simulate-dlq?queue=" + queue;
+            return restTemplate.postForEntity(targetUrl, null, Map.class);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "error", "ms-andesstay-reservations no disponible en " + reservationsServiceUrl,
+                "details", e.getMessage()
+            ));
+        }
     }
 }
