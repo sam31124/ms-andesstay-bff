@@ -1,0 +1,26 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ms-andesstay-bff
+  datasource:
+    url: jdbc:h2:mem:andesstaydb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driverClassName: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://sts.windows.net/64ab2952-0d1a-49ef-a64b-0494bc1432e8/
+          audiences: api://32043bc9-7878-4474-b8d2-61cb242aab22
+
+logging:
+  level:
+    org.springframework.security: DEBUG
