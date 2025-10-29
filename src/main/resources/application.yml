@@ -20,6 +20,13 @@ spring:
         jwt:
           issuer-uri: https://sts.windows.net/64ab2952-0d1a-49ef-a64b-0494bc1432e8/
           audiences: api://32043bc9-7878-4474-b8d2-61cb242aab22
+          jwk-set-uri: https://login.microsoftonline.com/64ab2952-0d1a-49ef-a64b-0494bc1432e8/discovery/v2.0/keys
+
+services:
+  reservations:
+    url: ${SERVICES_RESERVATIONS_URL:http://localhost:8081}
+  catalog:
+    url: ${SERVICES_CATALOG_URL:http://localhost:8082}
 
 logging:
   level:
